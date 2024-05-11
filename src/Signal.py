@@ -20,8 +20,10 @@ class Signal:
 
         time_samples = self._get_time_samples(eye_length, eye_samples, patterns)
 
-        self.eye_signal = (time_samples, org_signal)
-        return self.eye_signal
+        self.signal = org_signal
+        self.time_samples = time_samples
+
+        return (self.time_samples, self.signal)
 
     def _get_time_samples(self, eye_length, eye_samples, patterns):
         time_samples = np.linspace(0, eye_length, eye_samples) / self.baud_rate
@@ -37,13 +39,17 @@ class Signal:
     
     def filter_signal(self, bandwidth, filter_order = 4):
 
-        # how do i determine the signal frequencies from the details that I have
-        # Related to the baud rate
+        
         sampling_frequency = self.baud_rate * self.samples
-        b,a  = butter(filter_order, bandwidth, fs = sampling_frequency)
-        filtered_signal = filtfilt(b, a, self.eye_signal[1])
 
-        return filtered_signal
+        if bandwidth < sampling_frequency * 2: 
+            b,a  = butter(filter_order, bandwidth, fs = sampling_frequency)
+            filtered_signal = filtfilt(b, a, self.signal)
+            self.signal = filtered_signal
+        else:
+            print("Error: Bandwidth is larger than sampling frequency. Signal unchanged...")
+
+        return self.signal
 
 
         
