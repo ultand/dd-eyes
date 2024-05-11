@@ -10,49 +10,46 @@ class Signal:
         self.modulation_format = modulation_format
         self.baud_rate = baud_rate
 
-    def generate_signal(self, patterns: int, samples: int, eye_length: int):
+    def set_parameters(self, 
+                       bandwidth:float, 
+                       sample_rate: float, 
+                       sampling_time: float):
+        
+        self.bandwidth = bandwidth
+        self.sampling_rate = sample_rate
+        self.sampling_time = sampling_time
+        self.samples = int(sampling_time * sample_rate)
 
-        self.patterns = patterns
-        self.samples = samples
-
-        symbols = patterns * eye_length
-        org_signal = self._generate_nrz(symbols, samples)
-        self.eye_samples = samples * eye_length
-
-        time_samples = self._get_time_samples(eye_length, self.eye_samples, patterns)
-
-        self.signal = org_signal
-        self.time_samples = time_samples
-
+    def get_signal(self):
         return (self.time_samples, self.signal)
+    
+    def generate_signal(self):
 
-    def _get_time_samples(self, eye_length, eye_samples, patterns):
-        time_samples = np.linspace(0, eye_length, eye_samples) / self.baud_rate
-        full_time_samples = np.tile(time_samples, patterns)
+        symbols = int(self.sampling_time * self.baud_rate)
 
-        return full_time_samples
+        self._generate_nrz(symbols, self.samples)
+        self._get_time_samples()
+
+    def _get_time_samples(self):
+
+        self.time_samples = np.linspace(0, self.sampling_time, self.samples)
 
     def _generate_nrz(self, symbols: int, samples: int) -> np.ndarray:
 
         opts = np.random.choice([0, 1], symbols)
-        signal = np.repeat(opts, samples)
-        return signal
+        self.signal = np.repeat(opts, samples//symbols)
     
     def filter_signal(self, bandwidth, filter_order = 4):
-
-
-        self.sampling_frequency = self.baud_rate * self.samples
-
-        if bandwidth < self.sampling_frequency * 2: 
-            b,a  = butter(filter_order, bandwidth, fs = self.sampling_frequency)
+        self.bandwidth = bandwidth
+        if bandwidth < self.sampling_rate * 2: 
+            b,a  = butter(filter_order, bandwidth, fs = self.sampling_rate)
             filtered_signal = filtfilt(b, a, self.signal)
             self.signal = filtered_signal
         else:
             print("Error: Bandwidth is larger than sampling frequency. Signal unchanged...")
-
-        return self.signal
     
     def enforce_jitter(self, jitter_time):
+        """THIS MAY NOT WORK IN NEWEST ITERATION FIX"""
         # currently this function assumes that the provided jitter describes the STD of the jitter time. This may be updated to agree with definitions
         self.jitter_time = jitter_time * self.sampling_frequency
 
