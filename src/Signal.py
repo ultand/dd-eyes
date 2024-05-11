@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.signal import butter, filtfilt
 
 class Signal:
     """
@@ -10,6 +11,8 @@ class Signal:
         self.baud_rate = baud_rate
 
     def generate_signal(self, patterns: int, samples: int, eye_length: int):
+
+        self.samples = samples
 
         symbols = patterns * eye_length
         org_signal = self._generate_nrz(symbols, samples)
@@ -31,3 +34,16 @@ class Signal:
         opts = np.random.choice([0, 1], symbols)
         signal = np.repeat(opts, samples)
         return signal
+    
+    def filter_signal(self, bandwidth, filter_order = 4):
+
+        # how do i determine the signal frequencies from the details that I have
+        # Related to the baud rate
+        sampling_frequency = self.baud_rate * self.samples
+        b,a  = butter(filter_order, bandwidth, fs = sampling_frequency)
+        filtered_signal = filtfilt(b, a, self.eye_signal[1])
+
+        return filtered_signal
+
+
+        
