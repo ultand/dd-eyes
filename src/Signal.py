@@ -18,7 +18,6 @@ class Signal:
         time_samples = self._get_time_samples(eye_length, eye_samples, patterns)
 
         self.eye_signal = (time_samples, org_signal)
-        print(len(self.eye_signal[0]), len(self.eye_signal[1]))
         return self.eye_signal
 
     def _get_time_samples(self, eye_length, eye_samples, patterns):
