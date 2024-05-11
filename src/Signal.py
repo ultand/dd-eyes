@@ -15,14 +15,14 @@ class Signal:
         org_signal = self._generate_nrz(symbols, samples)
         eye_samples = samples * eye_length
 
-        time_samples = self._get_time_samples(eye_samples, patterns)
+        time_samples = self._get_time_samples(eye_length, eye_samples, patterns)
 
         self.eye_signal = (time_samples, org_signal)
-
+        print(len(self.eye_signal[0]), len(self.eye_signal[1]))
         return self.eye_signal
 
-    def _get_time_samples(self, eye_samples, patterns):
-        time_samples = np.linspace(0, eye_samples, eye_samples) / self.baud_rate
+    def _get_time_samples(self, eye_length, eye_samples, patterns):
+        time_samples = np.linspace(0, eye_length, eye_samples) / self.baud_rate
         full_time_samples = np.tile(time_samples, patterns)
 
         return full_time_samples
