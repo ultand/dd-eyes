@@ -5,10 +5,12 @@ class Signal:
     """
     Class to generate a noiseless Signal with different modulation formats.
     """
-    def __init__(self, modulation_format: str, baud_rate: float):
+    def __init__(self, modulation_format: str, baud_rate: float, bandwith: float = -1, jitter: float = 0):
 
         self.modulation_format = modulation_format
         self.baud_rate = baud_rate
+        self.bandwidth = bandwith
+        self.jitter = jitter
 
     def set_parameters(self, 
                        bandwidth:float, 
@@ -29,6 +31,8 @@ class Signal:
 
         self._generate_nrz(symbols, self.samples)
         self._get_time_samples()
+        if self.bandwidth > 0:
+            self.filter_signal()
 
     def _get_time_samples(self):
 
@@ -39,10 +43,12 @@ class Signal:
         opts = np.random.choice([0, 1], symbols)
         self.signal = np.repeat(opts, samples//symbols)
     
-    def filter_signal(self, bandwidth, filter_order = 4):
-        self.bandwidth = bandwidth
-        if bandwidth < self.sampling_rate * 2: 
-            b,a  = butter(filter_order, bandwidth, fs = self.sampling_rate)
+    def filter_signal(self, filter_order = 4):
+
+        if self.bandwidth < 0:
+            print(f"Error, Bandwidth of {self.bandwidth} is not valid. Set bandwidth before filtering the signal...")
+        if self.bandwidth < self.sampling_rate * 2: 
+            b,a  = butter(filter_order, self.bandwidth, fs = self.sampling_rate)
             filtered_signal = filtfilt(b, a, self.signal)
             self.signal = filtered_signal
         else:
