@@ -25,24 +25,35 @@ class Signal:
     def get_signal(self):
         return (self.time_samples, self.signal)
     
+    def get_eye_diagram(self, eye_length):
+        eye_time_samples = self.eye_time_samples(eye_length)
+        return (eye_time_samples, self.signal[:len(eye_time_samples)])
+
     def generate_signal(self):
 
-        symbols = int(self.sampling_time * self.baud_rate)
-
-        self._generate_nrz(symbols, self.samples)
+        self.symbols = int(self.sampling_time * self.baud_rate)
+        self._generate_nrz()
         self._get_time_samples()
         if self.bandwidth > 0:
             self.filter_signal()
 
     def _get_time_samples(self):
-
+    
         self.time_samples = np.linspace(0, self.sampling_time, self.samples)
 
-    def _generate_nrz(self, symbols: int, samples: int) -> np.ndarray:
+    def _generate_nrz(self) -> np.ndarray:
 
-        opts = np.random.choice([0, 1], symbols)
-        self.signal = np.repeat(opts, samples//symbols)
-    
+        opts = np.random.choice([0, 1], self.symbols)
+        self.signal = np.repeat(opts, self.samples//self.symbols)
+
+    def eye_time_samples(self, eye_length):
+        
+        eye_samples = int(eye_length*(self.sampling_rate/self.baud_rate))
+        time_samples = np.linspace(0, eye_samples, eye_samples)/self.baud_rate
+        full_time_samples = np.tile(time_samples, int(self.samples/eye_samples))
+        return full_time_samples
+        
+
     def filter_signal(self, filter_order = 4):
 
         if self.bandwidth < 0:
@@ -55,12 +66,13 @@ class Signal:
             print("Error: Bandwidth is larger than sampling frequency. Signal unchanged...")
     
     def enforce_jitter(self, jitter_time):
-        """THIS MAY NOT WORK IN NEWEST ITERATION FIX"""
+        """THIS MAY NOT WORK IN NEWEST ITERATION FIX
+        JITTER NEEDS TO BE MOVED TO A SEGMENT AFTER THE PLOT SIGNAL HAS BEEN CONVERTED TO AN EYE DIAGRAM"""
         # currently this function assumes that the provided jitter describes the STD of the jitter time. This may be updated to agree with definitions
-        self.jitter_time = jitter_time * self.sampling_frequency
+        self.jitter_time = jitter_time * self.sampling_rate
 
         # partition the signal realisations
-        partitioned_signal = np.split(self.signal, self.patterns)
+        partitioned_signal = np.split(self.signal, self.symbols)
         # need to divide it into patterns number of realisations
         # this particular thing probably needs a test
         for i, signal_partition in enumerate(partitioned_signal):
