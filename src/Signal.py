@@ -25,8 +25,11 @@ class Signal:
     def get_signal(self):
         return (self.time_samples, self.signal)
     
-    def get_eye_diagram(self, eye_length):
+    def get_eye_diagram(self, eye_length, jitter_bool = True):
         eye_time_samples = self.eye_time_samples(eye_length)
+        if jitter_bool:
+            jitter_signal = self.enforce_jitter(self.jitter)
+            return (eye_time_samples, jitter_signal[:len(eye_time_samples)])
         return (eye_time_samples, self.signal[:len(eye_time_samples)])
 
     def generate_signal(self):
@@ -66,8 +69,6 @@ class Signal:
             print("Error: Bandwidth is larger than sampling frequency. Signal unchanged...")
     
     def enforce_jitter(self, jitter_time):
-        """THIS MAY NOT WORK IN NEWEST ITERATION FIX
-        JITTER NEEDS TO BE MOVED TO A SEGMENT AFTER THE PLOT SIGNAL HAS BEEN CONVERTED TO AN EYE DIAGRAM"""
         # currently this function assumes that the provided jitter describes the STD of the jitter time. This may be updated to agree with definitions
         self.jitter_time = jitter_time * self.sampling_rate
 
