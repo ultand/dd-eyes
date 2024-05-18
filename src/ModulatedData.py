@@ -24,6 +24,9 @@ class ModulatedData:
         if value in self._supported_modulation_format:
 
             self._modulation_format = value
+            if self.data is not None:
+                # logger about updating data
+                self.data = None
         else:
             raise ValueError(f"Unsupported modulation format: {value}...")
 
@@ -35,8 +38,16 @@ class ModulatedData:
     def samples(self, value):
         self._samples = value
 
+        # if data already exists then update it with new samples
+        if self.data is not None:
+        #logger about updating data 
+            self.data = None
+
     @property
     def data(self):
+        if self._data is None:
+            # logger about data not existing
+            self.generate_data()
         return self._data
     
     @data.setter
