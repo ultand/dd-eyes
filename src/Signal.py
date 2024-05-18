@@ -52,7 +52,8 @@ class Signal:
     def eye_time_samples(self, eye_length):
         
         eye_samples = int(eye_length*(self.sampling_rate/self.baud_rate))
-        time_samples = np.linspace(0, eye_samples, eye_samples)/self.baud_rate
+        time_samples = np.linspace(0, eye_samples, eye_samples)
+        time_samples/=self.sampling_rate
         full_time_samples = np.tile(time_samples, int(self.samples/eye_samples))
         return full_time_samples
         
