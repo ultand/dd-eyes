@@ -4,17 +4,19 @@ class Noise:
         self.signal = signal
         self.snr = snr
 
+        self.signal_power = 0
+        self._calc_signal_power()
+
+        self.noise = np.zeros_like(signal)
+
     def generate_noise(self):
-        signal_power = self._calc_signal_power()
         snr_linear = 10**(self.snr/10)
-        noise_power = signal_power/snr_linear
-        noise = np.random.normal(0, np.sqrt(noise_power), self.signal.size)
+        
+        noise_power = self.signal_power/snr_linear
+        self.noise = np.random.normal(0, np.sqrt(noise_power), self.signal.size)
     
-        return noise
     
     def _calc_signal_power(self):
         
         mean_power = np.mean(self.signal)
-        signal_power = np.mean((self.signal-mean_power) ** 2)
-
-        return signal_power
+        self.signal_power = np.mean((self.signal-mean_power) ** 2)
