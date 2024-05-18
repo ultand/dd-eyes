@@ -5,12 +5,21 @@ class Signal:
     """
     Class to generate a noiseless Signal with different modulation formats.
     """
-    def __init__(self, modulation_format: str, baud_rate: float, bandwith: float = -1, jitter: float = 0):
+    def __init__(self, modulation_format: str, baud_rate: float, jitter: float = 0):
 
         self.modulation_format = modulation_format
         self.baud_rate = baud_rate
-        self.bandwidth = bandwith
         self.jitter = jitter
+
+        self.bandwidth = 0
+        self.sampling_rate = 0
+        self.sampling_time = 0
+        self.samples = 0
+
+        self.symbols = 0
+
+        self.time_samples = np.zeros(0)
+        self.signal = np.zeros(0)
 
     def set_parameters(self, 
                        bandwidth:float, 
