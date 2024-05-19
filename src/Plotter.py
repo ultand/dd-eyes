@@ -22,10 +22,19 @@ class Plotter:
         self._eye_data = None
         self._eye_time_samples = None   
         self._jittered_signal = None
+        self._hist_vmax_mult = None
 
         self._generate_eye_time_samples()
         self._generate_noisy_signal()
         self._generate_jittered_signal()
+
+    @property
+    def hist_vmax_mult(self):
+        return self._hist_vmax_mult
+    
+    @hist_vmax_mult.setter
+    def hist_vmax_mult(self, value):
+        self._hist_vmax_mult = value
 
     @property
     def noise(self):
@@ -58,12 +67,17 @@ class Plotter:
         #make this vmax_value options
         total_eye_samples = len(self._eye_time_samples)
         expected_samples = total_eye_samples/self._bins**2
-    
+        
+        if self._hist_vmax_mult:
+            plot_max = expected_samples * self._hist_vmax_mult
+        else:
+            plot_max = None
+
         hist = self._axs[axs_pos].hist2d(self._eye_time_samples,
                         self._jittered_signal + 1,
                         bins = self._bins,
                         cmap = self._eye_cmap,
-                        norm = LogNorm())
+                        norm = LogNorm(vmax = plot_max))
         return hist
 
     def _generate_jittered_signal(self):
