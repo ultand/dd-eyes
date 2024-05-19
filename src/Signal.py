@@ -5,92 +5,120 @@ class Signal:
     """
     Class to generate a noiseless Signal with different modulation formats.
     """
-    def __init__(self, modulation_format: str, baud_rate: float, jitter: float = 0):
+    def __init__(self, config=None):
 
-        self.modulation_format = modulation_format
-        self.baud_rate = baud_rate
-        self.jitter = jitter
+        config = config or {}
 
-        self.bandwidth = 0
-        self.sampling_rate = 0
-        self.sampling_time = 0
-        self.samples = 0
+        #required properties
+        self._signal = config.get("signal", None)
+        self._baud_rate = config.get("baud_rate", None)
+        self._bandwidth = config.get("bandwidth", None)
+        self._sampling_rate = config.get("sampling_rate", None)
 
-        self.symbols = 0
+        # processed variables
+        self._time_samples = None
+        self._sampled_signal = None
+        self._filtered_signal = None
+        self._samples = len(self._signal) if self._signal is not None else 0
 
-        self.time_samples = np.zeros(0)
-        self.signal = np.zeros(0)
+        self.update_processed_signals()
 
-    def set_parameters(self, 
-                       bandwidth:float, 
-                       sample_rate: float, 
-                       sampling_time: float):
-        
-        self.bandwidth = bandwidth
-        self.sampling_rate = sample_rate
-        self.sampling_time = sampling_time
-        self.samples = int(sampling_time * sample_rate)
+    @property
+    def baud_rate(self):
+        return self._baud_rate
 
-    def get_signal(self):
-        return (self.time_samples, self.signal)
+    @baud_rate.setter
+    def baud_rate(self, value):
+        self._baud_rate = value
+        self.update_processed_signals()
+
+
+    @property
+    def samples(self):
+        return len(self._signal) if self._signal else 0
     
-    def get_eye_diagram(self, eye_length, jitter_bool = True):
-        eye_time_samples = self.eye_time_samples(eye_length)
-        if jitter_bool:
-            jitter_signal = self.enforce_jitter(self.jitter)
-            return (eye_time_samples, jitter_signal[:len(eye_time_samples)])
-        return (eye_time_samples, self.signal[:len(eye_time_samples)])
+    @property
+    def bandwidth(self):
+        return self._bandwidth
 
-    def generate_signal(self):
+    @bandwidth.setter
+    def bandwidth(self, value):
+        self._bandwidth = value
+        self.update_filtered_signal()
 
-        self.symbols = int(self.sampling_time * self.baud_rate)
-        self._generate_nrz()
-        self._get_time_samples()
-        if self.bandwidth > 0:
-            self.filter_signal()
+    @property
+    def sampling_rate(self):
+        return self._sampling_rate
 
-    def _get_time_samples(self):
+    @sampling_rate.setter
+    def sampling_rate(self, value):
+
+        self._sampling_rate = value
+        self.update_processed_signals()
+        
+    @property
+    def sampled_signal(self):
+        return self._sampled_signal
     
-        self.time_samples = np.linspace(0, self.sampling_time, self.samples)
+    @sampled_signal.setter
+    def sampled_signal(self, value):
+        self._sampled_signal = value
 
-    def _generate_nrz(self) -> np.ndarray:
+    @property
+    def signal(self):
+        return self._signal
+        # repeat signal with given number of samples
+        # filter the signal
+    
+    @signal.setter
+    def signal(self, value):
+        # assign time samples based on the baud rate
+        self._signal = value
+        self._samples = len(value) if value is not None else 0
+        self.update_processed_signals()
+        #repeat the signal with sampling repeat number of samples
+        # if there is a bandwidth already then filter the signal
 
-        opts = np.random.choice([0, 1], self.symbols)
-        self.signal = np.repeat(opts, self.samples//self.symbols)
+    @property
+    def time_samples(self):
+        return self._time_samples
+    
+    @property
+    def filtered_signal(self):
+        return self._filtered_signal
+    
+    def update_processed_signals(self):
+        self.update_sampled_signal()
+        self.update_filtered_signal()
 
-    def eye_time_samples(self, eye_length):
+    def update_sampled_signal(self):
+        if self._baud_rate and (self._signal is not None) and self._samples:
+            # note that we round the number of samples per bit to an integer
+            # I should create a check and assign this before this point
+            samples_per_bit = int(self._sampling_rate/self._baud_rate)
+            self.sampled_signal = np.repeat(self._signal, samples_per_bit)
+
+            total_samples = self._samples * samples_per_bit
+            self._calculate_time_samples(total_samples)
+
+    def _calculate_time_samples(self, signal_length):
+        sample_arr = np.linspace(0, signal_length, signal_length)
+        self._time_samples = sample_arr/self._sampling_rate
         
-        eye_samples = int(eye_length*(self.sampling_rate/self.baud_rate))
-        time_samples = np.linspace(0, eye_samples, eye_samples)
-        time_samples/=self.sampling_rate
-        full_time_samples = np.tile(time_samples, int(self.samples/eye_samples))
-        return full_time_samples
-        
+    def update_filtered_signal(self, filter_order = 4):
+        # needs to be neatened
 
-    def filter_signal(self, filter_order = 4):
+        if self._bandwidth is None:
+            print("No Bandwidhth provided...")
 
-        if self.bandwidth < 0:
-            print(f"Error, Bandwidth of {self.bandwidth} is not valid. Set bandwidth before filtering the signal...")
-        if self.bandwidth < self.sampling_rate * 2: 
-            b,a  = butter(filter_order, self.bandwidth, fs = self.sampling_rate)
-            filtered_signal = filtfilt(b, a, self.signal)
-            self.signal = filtered_signal
-        else:
+        elif self._bandwidth <= 0:
+            print(f"Error, Bandwidth of {self._bandwidth} is not valid. Set bandwidth before filtering the signal...")
+
+        elif self._bandwidth >= self._sampling_rate * 2:
             print("Error: Bandwidth is larger than sampling frequency. Signal unchanged...")
-    
-    def enforce_jitter(self, jitter_time):
-        # currently this function assumes that the provided jitter describes the STD of the jitter time. This may be updated to agree with definitions
-        self.jitter_time = jitter_time * self.sampling_rate
 
-        # partition the signal realisations
-        partitioned_signal = np.split(self.signal, self.symbols)
-        # need to divide it into patterns number of realisations
-        # this particular thing probably needs a test
-        for i, signal_partition in enumerate(partitioned_signal):
-            jitter = np.random.normal(0, self.jitter_time)
-            partitioned_signal[i] = np.roll(signal_partition, int(np.round(jitter)))
+        else: 
+            nyquist = self._sampling_rate/2
 
-        return np.ravel(partitioned_signal)
-
-
-        
+            b,a  = butter(filter_order, self._bandwidth/nyquist)
+            self._filtered_signal = filtfilt(b, a, self._sampled_signal)
