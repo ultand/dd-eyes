@@ -4,25 +4,51 @@ import numpy as np
 import Signal
 
 class Plotter:
-    def __init__(self, signal:Signal.Signal, jitter_bool = True):
+    def __init__(self, axs, signal: Signal.Signal, config=None):
+
+        config = config  or {}
+        self._axs = axs
+        self._signal_class = signal
+        self._jitter_time = config.get("jitter_time", None)
+        self._eye_length = config.get("eye_length", None)
+        self._eye_cmap = config.get("color_map", plt.cm.jet)
+        self._noise = config.get("noise", None)
+        self._bins = config.get("eye_diagram_bins", None)
+
         self.eye_cmap = plt.cm.jet
-        self.signal = signal
-        self.jitter_bool = jitter_bool
 
-        self.eye_time_samples = None
-        self.eye_signal = None
+        self._eye_samples = int(self._signal_class.sampling_rate/self._signal_class.baud_rate * self._eye_length)
 
-        self.time_samples = None
-        self.signal_values = None
+        self._eye_realisations = self._signal_class.samples//self._eye_length
+
+        self._eye_data = None
+        self._eye_time_samples = None   
+
+    # specify which type of eye diagram
+    def get_eye_diagram_plot(self, axs_pos):
+
+        self._generate_eye_diagram()
+        self._generate_eye_time_samples()
+
+        print(self._eye_time_samples)
+        print(self._eye_data)
+        return self._axs[axs_pos].hist2d(self._eye_time_samples,
+                        self._eye_data,
+                        bins = self._bins)
+    
+    def _generate_eye_diagram(self):
+        #reformat plot
+        #add jitter
+        #assume just signal for now
+        eye_total_samples = self._eye_samples * self._eye_realisations
+        self._eye_data = (self._signal_class.filtered_signal+ self._noise)[:eye_total_samples] 
 
 
+    def _generate_eye_time_samples(self):
+        true_time_stamps = np.linspace(0, self._eye_samples, self._eye_samples)
+        true_time_stamps /= self._signal_class.sampling_rate
 
-    def get_eye_diagram_plot(self, eye_length, ax, bins = 500):
-
-        self._get_eye_diagram_data(eye_length)
-        ax.hist2d(self.eye_time_samples, self.eye_signal, bins)
-        return ax
-
+        self._eye_time_samples = np.tile(true_time_stamps, self._eye_realisations)
 
     def get_signal_plot(self, ax, start = 0, end = -1):
 
