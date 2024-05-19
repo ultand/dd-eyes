@@ -35,7 +35,7 @@ class Signal:
 
     @property
     def samples(self):
-        return len(self._signal) if self._signal else 0
+        return len(self._signal)
     
     @property
     def bandwidth(self):
