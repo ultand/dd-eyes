@@ -34,6 +34,8 @@ class TheoryEye:
     def _calculate_linear_snr(self):
         if self._data_levels == 2:
             self._linear_snr = 10**(self._snr/10)
+        else:
+            raise ValueError
 
     def _update_noise_std(self):
         self._noise_std = np.sqrt(0.5/self._linear_snr)
