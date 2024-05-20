@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import Signal
+import eye_signal
 from matplotlib.colors import LogNorm
 
 class Plotter:
@@ -22,7 +22,7 @@ class Plotter:
     get_eye_diagram_plot(axs_pos)
         Generates an eye diagram plot on the specified subplot axis position.
     """
-    def __init__(self, axs, signal: Signal.Signal, config=None):
+    def __init__(self, axs, signal: eye_signal.EyeSignal, config=None):
 
         """
         Initializes the Plotter class with the provided configuration.

@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.signal import butter, filtfilt
 
-class Signal:
+class EyeSignal:
     """
     Class to generate a noiseless Signal with different modulation formats.
     This class handles the sampling rate and the bandwidth filtering of the data.
