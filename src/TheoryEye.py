@@ -57,4 +57,5 @@ class TheoryEye:
     def plotter(self, ax):
         for plot_data in self._plots_data:
             plt.fill_between(self._x_axis, plot_data, alpha = 0.3)
+        ax.set_title(f'{self._data_levels}-Level Signal - SNR: {self._snr}dB - BER: {self._ber:.2e}')
         return ax
