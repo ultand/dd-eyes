@@ -16,10 +16,14 @@ class SimAnalysis:
     def bandwidth(self, value):
         self._bandwidth = value
 
-    def _remove_transition_times(self, signal, sampling_time, baud_rate, samples):
+    def _remove_transition_times(self, jittered_signal, sampling_time, baud_rate, samples):
         """
         based on the signal bandwidth, this remove the transition regions from the signal such that only the signal levels are analysed
         """
+
+        # TO BE CLEAR I AM CURRENTLY REMOVING THE TRANSITION TIMES, NOT THE JITTER TIMES. JITTER TIMES REQUIRES ADDITIONAL CODE
+
+        #I pass the jittered signal
         # this will require the signal
         # the bandwidth
         # the 90% - 10% rise time is assumed to be 0.35/3dB bandwidth
@@ -34,9 +38,42 @@ class SimAnalysis:
 
         #determine the number of points that will need to be removed from each transition point. Note that this should be centered on each point
         transition_range = transition_time/sampling_time
+        #plt.plot(jittered_signal)
 
+        #determine the ranges that we want to filter out
+        ranges = [[transition_point - transition_range/2, transition_point + transition_range/2] for transition_point in transition_points]
 
+        #temporary checks
+        #for transition_point in transition_points:
+        #    plt.vlines(transition_point-transition_range//2, 0, 1, color = 'red')
+        #    plt.vlines(transition_point+transition_range//2, 0, 1, color = 'green', ls = '--')
 
+        #plt.show()
+
+        mask = self.check_values_in_ranges(ranges, range(len(jittered_signal)))
+        #confirm that this is filtering out the points appropriately
+        return [jittered_signal[i] for i in range(len(jittered_signal)) if mask[i]]
+
+    def check_values_in_ranges(self, ranges, values):
+        #two pointer method to check if values are within some range
+
+        result = [False] * len(values)
+        i, j = 0, 0
+    
+        while i < len(values) and j < len(ranges):
+            if values[i] < ranges[j][0]:
+                # value is less than the start of the range, move to next value
+                i += 1
+            elif values[i] > ranges[j][1]:
+                # value is greater than the end of the range, move to next range
+                j += 1
+            else:
+                # value is within the current range
+                result[i] = True
+                i += 1
+    
+        return result
+    
     def add_to_params(self, mu, sigma, A):
         self.params.extend([mu, sigma, A])
         
