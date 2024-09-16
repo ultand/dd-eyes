@@ -1,20 +1,35 @@
 from scipy.optimize import curve_fit
 import numpy as np
 import matplotlib.pyplot as plt
+from  eye_signal import EyeSignal
+from signal_noise import Noise
 
 class SimAnalysis:
-    def __init__(self, config = None):
+    def __init__(self, 
+                 eyeSignal: EyeSignal, 
+                 noise: Noise,
+                 config = None):
         self.params = []
-        self._bandwidth = None
+        self.sampled_signal = eyeSignal.sampled_signal
+        self.sampled_noise = noise.noise
+        self._noisy_signal = self.sampled_noise + self.sampled_signal
 
 
     @property
-    def bandwidth(self):
-        return self._bandwidth
+    def sampled_signal(self):
+        return self._sampled_signal
+    
+    @sampled_signal.setter
+    def sampled_signal(self, value):
+        self._sampled_signal = value
 
-    @bandwidth.setter
-    def bandwidth(self, value):
-        self._bandwidth = value
+    @property
+    def sampled_noise(self):
+        return self._sampled_noise
+    
+    @sampled_noise.setter
+    def sampled_noise(self, value):
+        self._sampled_noise = value
 
     def _remove_transition_times(self, jittered_signal, sampling_time, baud_rate, samples):
         """
@@ -38,21 +53,15 @@ class SimAnalysis:
 
         #determine the number of points that will need to be removed from each transition point. Note that this should be centered on each point
         transition_range = transition_time/sampling_time
-        plt.plot(jittered_signal)
+
         #determine the ranges that we want to filter out
         ranges = [[transition_point - transition_range/2, transition_point + transition_range/2] for transition_point in transition_points]
 
-        #temporary checks
-        for transition_point in transition_points:
-            plt.vlines(transition_point-transition_range/2, 0, 1, color = 'red')
-            plt.vlines(transition_point+transition_range/2, 0, 1, color = 'green', ls = '--')
-
-
-        mask = self.check_values_in_ranges(ranges, range(len(jittered_signal)))
+        mask = self._check_values_in_ranges(ranges, range(len(jittered_signal)))
         #confirm that this is filtering out the points appropriately
-        return [jittered_signal[i] for i in range(len(jittered_signal)) if mask[i]]
+        self._no_transition_signal = [jittered_signal[i] for i in range(len(jittered_signal)) if mask[i]]
 
-    def check_values_in_ranges(self, ranges, values):
+    def _check_values_in_ranges(self, ranges, values):
         #two pointer method to check if values are within some range
 
         result = [True] * len(values)
@@ -86,10 +95,27 @@ class SimAnalysis:
         new_plot = ax.plot(x, self.bimodal(x, *new_params))
         return new_plot
         
+        
+    def _ideal_hist(self):
+        """
+        Calculate the bimodal fit to the ideal sampled signal with noise. Ignores issues associated with jitter and finite-width transitions.
+        To first approximation can be considered the SNR of an ideally timed sample
+        """
+        (counts, bins) = np.histogram(self._noisy_signal, bins = 100)
+        
+        bin_centers = (bins[:-1] + bins[1:]) / 2
+        ini_params = np.array(self.params)
+        params, _ = curve_fit(self.bimodal, bin_centers, counts, p0=ini_params)
+        
+        #should define parametesr with appropriate controls for these
+        self.ideal_fit = self.bimodal(bin_centers, *params)
+        self.bin_centers = bin_centers
+
+
+
     def gauss(self, x, mu, sigma, A):
         return A * np.exp(-((x-mu)**2)/(2 *sigma**2))
-        
-
+   
     def bimodal(self, x, *params_vals):
         y = np.zeros_like(x)
         num_gaussians = len(params_vals)//3
@@ -101,4 +127,7 @@ class SimAnalysis:
         return y
 
     def ber_analysis(self):
+        """
+        This method should determine the bit-error rate of an ideal sampled signal, and a real sampled signal, both theory and measured
+        """
         pass
