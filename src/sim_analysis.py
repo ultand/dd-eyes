@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from  eye_signal import EyeSignal
 from signal_noise import Noise
-from utils import eye_sectioning
+from utils import eye_sectioning, bimodal_fit
 
 class SimAnalysis:
     def __init__(self, 
@@ -16,7 +16,8 @@ class SimAnalysis:
         self.sampled_noise = noise.noise
 
         self._samples_per_eye = eyeSignal.sampling_rate//eyeSignal.baud_rate
-        self.eye_realisations = len(self.sampled_signal)//self._samples_per_eye
+        
+        self.eye_realisations = len(eyeSignal.sampled_signal)//self._samples_per_eye
 
     @property
     def sampled_signal(self):
@@ -122,8 +123,13 @@ class SimAnalysis:
         Generate a histogram from the jittered noisy data
         """
         initial_params = np.array(self.params)
-        new_params, cov = curve_fit(self.bimodal, x, y, p0=initial_params)
-        new_plot = ax.plot(x, self.bimodal(x, *new_params))
+        new_params, cov = curve_fit(
+            bimodal_fit.bimodal,
+            x, 
+            y, 
+            p0=initial_params)
+        
+        new_plot = ax.plot(x, bimodal_fit.bimodal(x, *new_params))
         return new_plot
         
         
@@ -144,18 +150,6 @@ class SimAnalysis:
 
 
 
-    def gauss(self, x, mu, sigma, A):
-        return A * np.exp(-((x-mu)**2)/(2 *sigma**2))
-   
-    def bimodal(self, x, *params_vals):
-        y = np.zeros_like(x)
-        num_gaussians = len(params_vals)//3
-        for i in range(num_gaussians):
-            mu = params_vals[3 * i]
-            sigma = params_vals[3 * i + 1]
-            A = params_vals[3 * i + 2]
-            y += self.gauss(x, mu, sigma, A)
-        return y
 
     def ber_analysis(self):
         """
