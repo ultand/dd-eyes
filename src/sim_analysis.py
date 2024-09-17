@@ -135,20 +135,20 @@ class SimAnalysis:
         
         bin_centers = (bins[:-1] + bins[1:]) / 2
         ini_params = np.array(self.params)
-        params, _ = curve_fit(self.bimodal, bin_centers, counts, p0=ini_params)
+        params, _ = curve_fit(bimodal_fit.bimodal, bin_centers, counts, p0=ini_params)
         
         #should define parametesr with appropriate controls for these
-        self.ideal_fit = self.bimodal(bin_centers, *params)
+        self.ideal_fit = bimodal_fit.bimodal(bin_centers, *params)
         self.bin_centers = bin_centers
 
 
-    def measured_ber(self, threshold = 0.5):
+    def measured_ber(self, threshold = 0.5, test_signal = None):
+        
+        if not test_signal:
+            test_signal = self.eyeSignal.sampled_signal + self.sampled_noise
 
         bit_mask = (self.eyeSignal.sampled_signal > threshold)
-
-        noisy_bits = (self.eyeSignal.sampled_signal 
-                      + self._sampled_noise > threshold)
-
+        noisy_bits = (test_signal > threshold)
         errors = np.sum(bit_mask != noisy_bits)
 
         return errors/len(bit_mask)
