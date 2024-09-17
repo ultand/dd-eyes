@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from  eye_signal import EyeSignal
 from signal_noise import Noise
+from utils import eye_sectioning
 
 class SimAnalysis:
     def __init__(self, 
@@ -13,7 +14,10 @@ class SimAnalysis:
         self.sampled_signal = eyeSignal.sampled_signal
         self.sampled_noise = noise.noise
         self._noisy_signal = self.sampled_noise + self.sampled_signal
-
+        
+        self._samples_per_eye = eyeSignal.sampling_rate//eyeSignal.baud_rate
+        self.sampling_rate = eyeSignal.sampling_rate
+        self.eye_realisatsions = len(self.sampled_signal)//self._samples_per_eye
 
     @property
     def sampled_signal(self):
@@ -82,6 +86,26 @@ class SimAnalysis:
                 i += 1
     
         return result
+    
+
+
+    def analysis_subsection(self, start = 1e-3,  end = 7e-3):
+        
+        time_samples= eye_sectioning.gen_eye_time_samples(self._samples_per_eye,
+                                                          self.sampling_rate,
+                                                          self.eye_realisatsions
+                                                            )
+        eye_data = eye_sectioning.used_eye_points(self._noisy_signal,
+                                                  self.eye_realisatsions,
+                                                  self._samples_per_eye)
+
+        time_sec, eye_sec = eye_sectioning.get_eye_subsection(eye_data,
+                                                              time_samples,
+                                                              start,
+                                                              end)
+        
+        plt.hist2d(time_sec, eye_sec, bins = 500, cmap = "hot")
+        plt.show()
     
     def add_to_params(self, mu, sigma, A):
         self.params.extend([mu, sigma, A])
