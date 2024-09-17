@@ -11,13 +11,12 @@ class SimAnalysis:
                  noise: Noise,
                  config = None):
         self.params = []
-        self.sampled_signal = eyeSignal.sampled_signal
+
+        self.eyeSignal = eyeSignal
         self.sampled_noise = noise.noise
-        self._noisy_signal = self.sampled_noise + self.sampled_signal
-        
+
         self._samples_per_eye = eyeSignal.sampling_rate//eyeSignal.baud_rate
-        self.sampling_rate = eyeSignal.sampling_rate
-        self.eye_realisatsions = len(self.sampled_signal)//self._samples_per_eye
+        self.eye_realisations = len(self.sampled_signal)//self._samples_per_eye
 
     @property
     def sampled_signal(self):
@@ -89,23 +88,31 @@ class SimAnalysis:
     
 
 
-    def analysis_subsection(self, start = 1e-3,  end = 7e-3):
-        
-        time_samples= eye_sectioning.gen_eye_time_samples(self._samples_per_eye,
-                                                          self.sampling_rate,
-                                                          self.eye_realisatsions
-                                                            )
-        eye_data = eye_sectioning.used_eye_points(self._noisy_signal,
-                                                  self.eye_realisatsions,
-                                                  self._samples_per_eye)
+    def get_central_eye(self, start = -1,  end = -1):
+        # this will need to be updated in real-time
 
-        time_sec, eye_sec = eye_sectioning.get_eye_subsection(eye_data,
-                                                              time_samples,
-                                                              start,
-                                                              end)
+        time_samples= eye_sectioning.gen_eye_time_samples(
+            self._samples_per_eye,
+            self.eyeSignal.sampling_rate,
+            self.eye_realisations)
         
-        plt.hist2d(time_sec, eye_sec, bins = 500, cmap = "hot")
-        plt.show()
+        eye_data = eye_sectioning.used_eye_points(
+            self.eyeSignal.filtered_signal + self.sampled_noise,
+            self.eye_realisations,
+            self._samples_per_eye)
+
+        if (start >= 0) and (end >= 0):
+
+            time_sec, eye_sec = eye_sectioning.get_eye_subsection(
+                eye_data,
+                time_samples,
+                start,
+                end)
+            
+            return time_sec, eye_sec
+        else:
+            return time_samples, eye_data
+        
     
     def add_to_params(self, mu, sigma, A):
         self.params.extend([mu, sigma, A])
