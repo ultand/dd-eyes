@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.signal import butter, filtfilt
+from utils import eye_sectioning
 
 class EyeSignal:
     """
@@ -183,3 +184,18 @@ class EyeSignal:
 
             b,a  = butter(filter_order, self._bandwidth/nyquist)
             self._filtered_signal = filtfilt(b, a, self._sampled_signal)
+
+    def update_jittered_signal(self, eye_length = 5, bit_samples = -1):
+
+        
+        eye_samples = eye_length * self.sampling_rate//self.baud_rate
+        eye_realisations = bit_samples // eye_length
+
+        eye_time_samples = eye_sectioning.gen_eye_time_samples(
+                                eye_samples, 
+                                self.sampling_rate, 
+                                eye_realisations)
+        
+        eye_volts = eye_sectioning.used_eye_points(self._filtered_signal, eye_realisations, eye_samples)
+        
+        return eye_time_samples, eye_volts
