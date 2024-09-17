@@ -60,8 +60,13 @@ class Noise:
     
     @snr.setter
     def snr(self, value:float):
-        self._snr = value
-        self.generate_noise()
+        if self._snr is not None:
+            current_snr = self._snr
+            self._snr = value
+            self.update_noise(current_snr)
+        else:    
+            self._snr = value
+            self.generate_noise()
 
     @property
     def noise(self):
@@ -81,6 +86,12 @@ class Noise:
         noise_power = self._signal_power/snr_linear
         self._noise = np.random.normal(0, np.sqrt(noise_power), self._signal.size)
     
+    def update_noise(self, prev_snr):
+        prev_linear_snr = 10**(prev_snr/10)
+        snr_linear = 10**(self.snr/10)
+
+        self._noise *= np.sqrt(prev_linear_snr/snr_linear)
+
     def _calc_signal_power(self):
         """
         Calculate the rms signal power for use in determining the SNR.
