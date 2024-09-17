@@ -19,13 +19,6 @@ class SimAnalysis:
         
         self.eye_realisations = len(eyeSignal.sampled_signal)//self._samples_per_eye
 
-    @property
-    def sampled_signal(self):
-        return self._sampled_signal
-    
-    @sampled_signal.setter
-    def sampled_signal(self, value):
-        self._sampled_signal = value
 
     @property
     def sampled_noise(self):
@@ -149,6 +142,16 @@ class SimAnalysis:
         self.bin_centers = bin_centers
 
 
+    def measured_ber(self, threshold = 0.5):
+
+        bit_mask = (self.eyeSignal.sampled_signal > threshold)
+
+        noisy_bits = (self.eyeSignal.sampled_signal 
+                      + self._sampled_noise > threshold)
+
+        errors = np.sum(bit_mask != noisy_bits)
+
+        return errors/len(bit_mask)
 
 
     def ber_analysis(self):
