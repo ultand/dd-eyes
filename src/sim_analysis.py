@@ -15,9 +15,6 @@ class SimAnalysis:
         self.eyeSignal = eyeSignal
         self.sampled_noise = noise.noise
 
-        self._samples_per_eye = eyeSignal.sampling_rate//eyeSignal.baud_rate
-        
-        self.eye_realisations = len(eyeSignal.sampled_signal)//self._samples_per_eye
 
 
     @property
@@ -27,6 +24,20 @@ class SimAnalysis:
     @sampled_noise.setter
     def sampled_noise(self, value):
         self._sampled_noise = value
+
+    @property 
+    def eyeSignal(self):
+        return self._eyeSignal
+    
+    @eyeSignal.setter
+    def eyeSignal(self, value:EyeSignal):
+        
+        self._eyeSignal = value
+        self._samples_per_eye = self._eyeSignal.sampling_rate//self._eyeSignal.baud_rate
+
+        self.eye_realisations = len(self._eyeSignal.sampled_signal)//self._samples_per_eye
+        # consider running some update functions appropriately
+
 
     def _remove_transition_times(self, jittered_signal, sampling_time, baud_rate, samples):
         """
@@ -143,7 +154,7 @@ class SimAnalysis:
 
 
     def measured_ber(self, threshold = 0.5, test_signal = None):
-        
+
         if not test_signal:
             test_signal = self.eyeSignal.sampled_signal + self.sampled_noise
 
